@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>绿源数据</title>
+    <style type="text/css">
+    html,body{width: 100%;height: 100%;margin:0;overflow: hidden;}body{margin:0;}@keyframes load-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.load-spin-center{text-align:center;padding-top:100px}.load-spin{display:inline-block;position:relative;width:64px;height:64px}.load-spin div{animation:load-spin 1.4s cubic-bezier(0.5,0,0.5,1) infinite;transform-origin:32px 32px}.load-spin div:after{content:" ";display:block;position:absolute;width:6px;height:6px;border-radius:50%;margin:-3px 0 0 -3px}.load-spin div:nth-child(1):after{top:14px;left:50px;background:#43a3fc}.load-spin div:nth-child(2):after{top:10px;left:45px;background:#4ea8fb}.load-spin div:nth-child(3):after{top:7px;left:39px;background:#59adfa}.load-spin div:nth-child(4):after{top:6px;left:32px;background:#65b2fa}.load-spin div:nth-child(5):after{top:7px;left:25px;background:#6eb6f9}.load-spin div:nth-child(6):after{top:10px;left:19px;background:#79bbf8}.load-spin div:nth-child(7):after{top:14px;left:14px;background:#84c0f7}.load-spin div:nth-child(8):after{top:19px;left:10px;background:#90c5f7}.load-spin div:nth-child(1){animation-delay:-0.86s}.load-spin div:nth-child(2){animation-delay:-0.83s}.load-spin div:nth-child(3){animation-delay:-0.78s}.load-spin div:nth-child(4){animation-delay:-0.73s}.load-spin div:nth-child(5){animation-delay:-0.68s}.load-spin div:nth-child(6){animation-delay:-0.63s}.load-spin div:nth-child(7){animation-delay:-0.58s}.load-spin div:nth-child(8){animation-delay:-0.53s}
+    #progress-wrap{display:none;position:fixed;z-index:1031;top:0;left:0;width:100%;height:2px;background:#e6e6e6}#progress-bar{background:#29d;width:100%;height:100%}#progress-bar i{display:block;position:absolute;right:0;width:100px;height:100%;box-shadow:0 0 10px #29d,0 0 5px #29d;opacity:1;-webkit-transform:rotate(3deg) translate(0,-4px);-ms-transform:rotate(3deg) translate(0,-4px);transform:rotate(3deg) translate(0,-4px)}
+    </style>
+    <!--
+      引入生产环境的 dist/app.js  app 配置已编译, 加载 page 为 dist/view 目录的已编译 vue 组件
+    -->
+    <script src="https://cdn.bootcss.com/require.js/2.3.6/require.min.js" data-main="dist/app" defer async="true"></script>
+</head>
+<body>
+  <div id="progress-wrap"><div id="progress-bar"><i></i></div></div>
+  <div id="app_loader" class="load-spin-center"><div class="load-spin"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div></div>
+  <div id="app"></div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "name": "vue-4step",
+  "version": "1.0.0",
+  "description": "convert vue sfc to js",
+  "main": "dist/foo.umd.js",
+  "scripts": {
+    "make": "rollup -c ./scripts/rollup.config.js",
+    "make:1": "cross-env BUILD_STEP=1 npm run make",
+    "make:2": "cross-env BUILD_STEP=2 npm run make",
+    "make:3": "cross-env BUILD_STEP=3 npm run make",
+    "make:4": "cross-env BUILD_STEP=4 npm run make"
+  },
+  "author": {
+    "name": "malacca"
+  },
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "cross-env": "^5.2.0",
+    "fs-extra": "^7.0.1",
+    "less": "^3.9.0",
+    "rollup": "^1.11.3",
+    "rollup-plugin-buble": "^0.19.6",
+    "rollup-plugin-replace": "^2.2.0",
+    "rollup-plugin-commonjs": "^9.3.4",
+    "rollup-plugin-vue": "^5.0.0",
+    "rollup-plugin-node-resolve": "^4.2.3",
+    "rollup-plugin-terser": "^4.0.4",
+    "vue-template-compiler": "^2.6.10"
+  }
+}
