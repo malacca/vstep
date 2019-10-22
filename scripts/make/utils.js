@@ -128,7 +128,12 @@ const addStyle = function(id, css) {
         style.ids.add(id);
         let code = css.source;
         if (baseUrl !== '') {
-            code = code.replace(/(url\(\s*['"]?)/g, "$1" + baseUrl);
+            code = code.replace(/(url\(\s*['"]?)(.*)\)/gmi, (match, p1, p2) => {
+                if (p2.startsWith('data:')) {
+                    return match;
+                }
+                return p1 + baseUrl + p2 + ')';
+            });
             if (code.indexOf('AlphaImageLoader') > -1) {
                 code = code.replace(/(AlphaImageLoader\(\s*src=['"]?)/g, "$1" + baseUrl);
             }
@@ -382,7 +387,7 @@ const appRouterIssue = {
 // 加载路由组件
 const requireRouter = (path, notError) => {
     return routerResolver(path).then(function (obj) {
-        if (obj !== null && typeof obj === 'object' && ('render' in obj || 'template' in obj)) {
+        if (obj !== null && typeof obj === 'object') {
             return obj;
         }
         const Err = new Error("Component [" + path + "] render/template not defined");

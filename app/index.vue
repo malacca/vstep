@@ -419,7 +419,27 @@ export default {
     opacity: 0;
     transition: opacity .3s cubic-bezier(.7,.3,.1,1);
 }
+
+.app-container.app-phone{
+    display: block;
+    height: auto;
+}
+.app-phone .el-container{
+    display: block;
+    height: auto;
+    padding-top:48px;
+}
+.app-phone .app-header{
+    position: fixed;
+    width: 100%;
+    left: 0;
+    top: 0;
+    z-index:100;
+}
 .app-phone .app-view{
+    border-top:0;
     border-left:0;
+    display: block;
+    height: auto;
 }
 </style>

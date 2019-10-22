@@ -4,7 +4,11 @@
         未指定 CURD 组件的数据源
     </div>
     <div class="curd-page" v-else-if="status === 2">
-        <el-page-header @back="$_goBack" :content="pageName" />
+        <el-page-header @back="$_goBack" :content="pageName">
+            <template v-slot:content v-if="pageHeader">
+                <slot v-bind="pageHeaderData" :name="pageHeader"/>
+            </template>
+        </el-page-header>
         <div class="curd-page-component">
             <component :is="pageCmpt" />
         </div>
@@ -18,18 +22,26 @@
                      </el-input>
                      <el-link type="primary" v-if="advanceSearch.enable">高级</el-link>
                  </div>
-
-                 <div class="curd-revise" v-if="revise.length">
+                 <div class="curd-revise" v-if="reviseProps.length">
                      <el-button size="mini" icon="el-icon-s-operation" class="curd-revise-toggle" :disabled="loading" @click="$_toggleRevise"/>
                      <div :class="'curd-revise-list'+reviseOpen">
-                        <el-button type="primary" size="mini" v-for="(item, index) in revise" :key="index" :disabled="loading" @click="$_doRevise(item)">{{item.name}}</el-button>
+                        <el-button 
+                            type="primary" 
+                            size="mini" 
+                            v-for="(item, index) in reviseProps" 
+                            :key="index" 
+                            :disabled="loading" 
+                            :loading="item.ing"
+                            @click="$_doRevise(item)"
+                        >{{item.name}}</el-button>
                         <el-button type="primary" size="mini" icon="el-icon-refresh" :disabled="loading" @click="refresh"/>
                      </div>
                  </div>
                  <div class="curd-revise" v-else>
                      <el-button type="primary" size="mini" icon="el-icon-refresh" :disabled="loading" @click="refresh"/>
                  </div>
-            </div> 
+            </div>
+
             <div :class="'curd-list'+(loading || !total ? ' curd-list-none' : '')">
                 <el-table 
                 ref="table"
@@ -44,40 +56,61 @@
                 @filter-change="$_filterList"
                 >
                     <el-table-column type="selection" width="34" v-if="operate.length"/>
+
                     <el-table-column  
                         v-for="(column, index) in tableColumns" 
-                        v-bind="column"
+                        v-bind="column.props"
                         :key="index"
-                    />
-                    <el-table-column label="操作" :width="rowReviseWidth" v-if="rowRevise.length">
-                        <template slot-scope="scope">
-                           <span :ss="scope.row.$s_">
+                    >
+                        <template v-if="column.header" v-slot:header="scope">
+                            <slot v-bind="scope" :name="column.header"/>
+                        </template>
+                        <template v-if="column.slot" v-slot:default="scope">
+                            <slot v-bind="scope" :name="column.slot"/>
+                        </template>
+                    </el-table-column>
+
+                    <el-table-column label="操作" :width="rowReviseSize" v-if="tableOperate">
+                        <template v-if="tableOperateHeader" v-slot:header="scope">
+                            <slot v-bind="scope" :name="tableOperateHeader"/>
+                        </template>
+                        <template v-slot="scope">
+                            <slot v-bind="scope" :name="tableOperate"/>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作" :width="rowReviseSize" v-else-if="rowRevise.length">
+                        <template v-if="tableOperateHeader" v-slot:header="scope">
+                            <slot v-bind="scope" :name="tableOperateHeader"/>
+                        </template>
+                        <template v-slot="scope">
+                           <span :ss="scope.row.$s_||0">
                                 <template v-for="(item, index) in rowRevise">
                                     <el-button
                                         :key="index"
-                                        v-if="!('$s' in scope.row) || scope.row.$s[index]!=='hide'"
+                                        v-if="('$s' in scope.row) && scope.row.$s[index]!=='hide'"
                                         type="text"
                                         size="small"
                                         :disabled="scope.row.$s[index]"
                                         :style="!scope.row.$s[index] && 'color' in item ? 'color:'+item.color : ''"
-                                        @click.native.prevent="$_doRowRevise(item, scope)"
+                                        @click.native.prevent="$_doRowRevise(item, scope, index)"
                                     >{{item.name}}</el-button>
                                 </template>
                            </span>
-                        </template>    
+                        </template>
                     </el-table-column>
+
                 </el-table>
             </div>
         </div>
-        <div :class="'curd-pager' + (operate.length ? ' curd-pager-multi' : '')">
-            <div class="curd-operate" v-if="operate.length">
+        <div :class="'curd-pager' + (operateProps.length ? ' curd-pager-multi' : '')">
+            <div class="curd-operate" v-if="operateProps.length">
                 <el-button size="mini" icon="el-icon-finished" class="curd-operate-toggle" :disabled="loading||!total" @click="$_toggleOperate"/>
                 <el-checkbox :indeterminate="selectSome" v-model="selectAll" :disabled="loading||!total" @change="toggleChecked"/>
                 <div :class="'curd-operate-list'+operateOpen">
                     <el-button type="text" 
-                        v-for="(item, index) in operate" 
+                        v-for="(item, index) in operateProps" 
                         :key="index" 
-                        :disabled="operateDis" 
+                        :disabled="item.ing||operateDis" 
                         @click="$_doOperate(item)"
                     >{{item.name}}</el-button>
                 </div>
@@ -99,7 +132,7 @@
 /*
 *  curd 组件, 依赖 element ui
 */
-//import Form from './Account_form.vue';
+let _currentCurd;
 export default {
     name:'curd',
 
@@ -108,7 +141,10 @@ export default {
             //当前状态/操作项组件(若status=2)
             status: 0,
             pageName: null,
+            pageHeader:null,
+            pageHeaderData:null,
             pageCmpt: null,
+
 
             // 表格状态/总条数/当前页码/数据
             loading: true,
@@ -116,11 +152,11 @@ export default {
             currentPage:1,
             tableData: [],
 
-            // 单条操作列宽度
-            rowReviseWidth:150,
-
             // 顶部关键字   
             keyword: '',
+
+            // 顶部操作按钮
+            reviseProps:[],
 
             // 顶部(phone ui) 显示操作项
             reviseOpen: '',
@@ -128,6 +164,9 @@ export default {
             // 底部复选框状态
             selectSome: false,
             selectAll: false,
+
+            // 底部操作按钮
+            operateProps:[],
 
             //底部(phone ui) 显示操作项
             operateOpen: '',
@@ -189,7 +228,10 @@ export default {
                 }
          * }]
          */
-        columns: Array,
+        columns:{
+            type:Array,
+            default:[]
+        },
   
         /* 顶部操作项 数据格式
          * [{
@@ -204,6 +246,8 @@ export default {
                 link:String  请求uri, ajax填写后端 api uri,  链接则填写一个唯一字符串
                 path:String|Object  当操作为打开链接(type!=3)时, path(String) 为加载自定义的页面 compoent 文件名,  
                                     path(Object) 为其他形式调用组件, 可以是自动化表单(), 也可以是一个组件对象
+                header:String   在 type=0 的情况下, 定义页头显示的 slot 名称
+                headerData:any  传递给页头 slot 的 props
                 after:int    操作完成后返回列表,  0-什么都不做; 1-载入第一页; 2-刷新当前页; function-执行自定义函数
 
 
@@ -233,24 +277,43 @@ export default {
                 },
             ]
          */
-        revise:Array,
+        revise:{
+            type:Array,
+            default:[]
+        },
 
         // 单条数据 操作项 数据结构参见 revise 说明
-        rowRevise:Array,
+        rowRevise:{
+            type:Array,
+            default:[]
+        },
+        rowReviseWidth: Number,
 
         // 底部操作项 数据结构参见 revise 说明
-        operate:Array,
+        operate:{
+            type:Array,
+            default:[]
+        },
 
-        // 数据处理函数, 当 dataSource 接口返回数据后, 调用该函数修改数据
-        dataResolver:Function,
+        // 列表查询到后端 lists 数据后立即调用
+        beforeResolve:Function,
+
+        // 处理完操作按钮 是否禁用后 调用
+        afterResolve:Function,
 
         // 给 ele table 的 props
         // 参考 https://element.eleme.io/#/zh-CN/component/table
         // 不能使用  data/height/max-height
-        tableProps:Object,
+        tableProps:{
+            type:Object,
+            default:{}
+        },
 
         // 给 ele table 设置的监听函数
-        tableEvent:Object,
+        tableEvent:{
+            type:Object,
+            default:{}
+        },
     },
 
     computed: {
@@ -277,6 +340,7 @@ export default {
             let hasFlex = false;
             const allowed = ['width', 'header-align', 'align', 'resizable', 'class-name'];
             this.columns.forEach((item, index) => {
+                let prop = null;
                 const column = {};
                 Object.entries(item).forEach(([key, value]) => {
                     if (allowed.indexOf(key) > -1) {
@@ -285,6 +349,7 @@ export default {
                     }
                     if (key === 'field') {
                         column.prop = value;
+                        prop = value;
                     } else if(key === 'name') {
                         column.label = value;
                     } else if (key === 'expand' && !!value) {
@@ -309,14 +374,50 @@ export default {
                 if ('min-width' in column) {
                     delete column.width;
                 }
-                columns.push(column);
+                const arr = {
+                    props: column,
+                    slot: null,
+                    header: null,
+                }
+                if (prop) {
+                    if ('column-' + prop in this.$scopedSlots) {
+                        arr.slot = 'column-' + prop;
+                    }
+                    if ('column-' + prop + '-header' in this.$scopedSlots) {
+                        arr.header = 'column-' + prop + '-header';
+                    }
+                }
+                columns.push(arr);
             })
             return columns;
-        }
+        },
+
+        // 自定义操作列 
+        tableOperateHeader(){
+            return 'operate-header' in this.$scopedSlots ? 'operate-header' : null;
+        },
+        tableOperate(){
+            return 'operate' in this.$scopedSlots ? 'operate' : null;
+        },
+        // 操作列宽度
+        rowReviseSize(){
+            if (this.rowReviseWidth) {
+                return this.rowReviseWidth;
+            }
+            if (!this.rowRevise.length) {
+                return 0;
+            }
+            //算一下 单条操作 列宽度
+            let str = '';
+            this.rowRevise.forEach(item => {
+                str += item.name;
+            });
+            return 13 * str.length + this.rowRevise.length * 10 + 30;
+        },
     },
 
     // 实例创建
-    created() {
+    mounted() {
         if (!this.dataSource) {
             this.status = 1;
             return;
@@ -341,22 +442,34 @@ export default {
         // 创建一个筛选字段的缓存对象
         this._filterFields = {};
 
+        // 操作单条数据按钮的 序号
+        this._lastRowOperateIndex = null;
+
         // 弹窗独立页 关闭后的 loadStyle
         this._afterDialogClose_loadStyle = 0;
-
-        // 算一下 单条操作 列宽度
-        let str = '';
-        this.rowRevise.forEach(item => {
-            str += item.name;
-        });
-        this.rowReviseWidth = 20 * str.length;
 
         // 传递给操作项的 data 值
         this.$_resetOperateData();
 
         // 点击页面隐藏  顶部/底部 操作菜单
         document.addEventListener('touchstart', this.$_listenTouch);
-        
+
+        // reviseProps
+        const reviseProps = [];
+        this.revise.forEach(item => {
+            item.ing = false;
+            reviseProps.push(item);
+        });
+        this.reviseProps = reviseProps;
+
+        // operateProps
+        const operateProps = [];
+        this.operate.forEach(item => {
+            item.ing = false;
+            operateProps.push(item);
+        });
+        this.operateProps = operateProps;
+
         //载入数据
         this.$_initPage();
     },
@@ -372,7 +485,7 @@ export default {
     },
 
     methods:{
-        // 点击顶部刷新按钮/刷新
+        // 点击顶部刷新按钮/刷新 (暴露函数)
         refresh(){
             this.$admin.reload()
         },
@@ -408,7 +521,7 @@ export default {
             this.reviseOpen = this.reviseOpen === '' ?  ' open' : '';
         },
 
-        // 底部操作功能 (反选可暴露)
+        // 底部操作功能 (暴露函数:反选)
         toggleChecked(){
             this.tableData.forEach(item => {
                 this.$refs.table.toggleRowSelection(item)
@@ -431,12 +544,6 @@ export default {
             this.operateOpen = this.operateOpen === '' ?  ' open' : '';
         },
 
-        //独立操作页 头部 返回按钮
-        $_goBack(){
-            this._loadStyle = 0;
-            this.$router.replace(this._pagePath);
-        },
-
         // 重置传递给操作项的 data 值
         $_resetOperateData(){
             this._operateData = {
@@ -444,7 +551,7 @@ export default {
                 table: this.$refs.table, //table vue对象
                 kind: null,    //操作类型 0-顶部, 1-单条数据, 2-底部
                 primary: this.primary, //主键字段名
-                data: null,       //当前 table 数据
+                data: null,    //当前 table 数据
                 dialog:null,   //是否为弹窗形式的操作
                 operate:null,  //操作设置
 
@@ -460,7 +567,8 @@ export default {
             this._operateData.kind = 0;
             this.$_doOperateConfirm(item);
         },
-        $_doRowRevise(item, scope) {
+        $_doRowRevise(item, scope, index) {
+            this._lastRowOperateIndex = index;
             this.$_resetOperateData();
             this._operateData.kind = 1;
             this._operateData.row = scope.row;
@@ -504,17 +612,27 @@ export default {
             if (type < 3) {
                 this._operateData.dialog = type;
             }
+            // 操作按钮显示为 loading 状态
+            if (this._operateData.kind === 1) {
+                this._operateData.row.$s[this._lastRowOperateIndex] = true;
+                this.updateRow(this._operateData.row);
+            } else {
+                operate.ing = true;
+            }
             //执行 自定义回调
             if (type === 4) {
                 const callback = 'callback' in operate ? operate.callback : null;
                 if (callback) {
-                    callback(this._operateData);
+                    Promise.resolve(callback(this._operateData)).then(() => {
+                        this.$_endOprateIng(operate);
+                    })
                 } else{
+                    this.$_endOprateIng(operate);
                     this.$admin.alert('未设置操作的回调函数');
                 }
                 return;
             }
-            //执行 ajax
+            //执行配置式 ajax
             if (type === 3) {
                 return this.$_doAjaxOperate(operate, this._operateData.id);
             }
@@ -523,7 +641,7 @@ export default {
             if (!this.$admin.getStore('phone')) {
                 param.push('_dialog='+operate.type)
             }
-            if (this._operateData.id) {
+            if (this._operateData.id && !Array.isArray(this._operateData.id)) {
                 param.push('id='+this._operateData.id)
             }
             let link = this.$route.meta.uri + '/' + operate.link;
@@ -536,12 +654,13 @@ export default {
             const payload = {};
             payload[this.primary] = ids;
             this.runAjax(item.link, payload).then(res => {
+                this.$_endOprateIng(item);
                 if (!res) {
                     return;
                 }
                 const after = 'after' in item ? item.after : 0;
                 if (typeof after === 'function') {
-                    after(this._operateData);
+                    after(this._operateData, res);
                 } else if (after === 1) {
                     this.toPage(1)
                 } else if (after === 2) {
@@ -551,7 +670,8 @@ export default {
         },
 
         // 执行一个 ajax 操作
-        runAjax(link, payload) {
+        runAjax(link, payload, disSuccessMessage) {
+            disSuccessMessage = disSuccessMessage||0;
             return this.$admin.postJson(link, payload, 4).then(res => {
                 res = res||{};
                 const code = 'code' in res ? res.code : 500;
@@ -560,15 +680,87 @@ export default {
                     this.$admin.alert(message, code);
                     return false;
                 }
-                this.$message({
-                    message,
-                    type: 'success'
-                });
+                if (!disSuccessMessage) {
+                    this.$message({
+                        message,
+                        type: 'success'
+                    });
+                }
                 return res;
             }).catch(error => {
                 this.$admin.alert('message' in error ? error.message : '操作失败', 'code' in error ? error.code : 600);
                 return false;
             });
+        },
+
+        // 查看一个页面, 暴露给下级使用
+        /*
+        options = {
+            name: String, 标题头
+            type: 0|1|2,  (0-链接,打开一个页面; 1-链接,弹窗形式打开页面, 2-链接,无标题头打开弹窗)
+            path:String|Object  component组件名称或对象
+            after:int    操作完成后返回列表,  0-什么都不做; 1-载入第一页; 2-刷新当前页; function-执行自定义函数
+
+            row: Object||null, 当前操作的数据, 会传递给子页面
+            index: int,  当前操作数据在 data 中的序号下标, 会传递给子页面
+        }
+        */
+        view(options) {
+            const operate = {};
+            if (!('path' in options)) {
+                this.$admin.alert('未指定组件');
+                return;
+            }
+            operate.path = options.path;
+            const fields = ['name', 'type', 'after', 'data'];
+            fields.forEach(k => {
+                if (k in options) {
+                    operate[k] = options[k];
+                }
+            });
+            this.$_resetOperateData();
+            this._operateData.kind = 4;
+            if ('row' in options && options.row) {
+                this._operateData.row = options.row;
+                if (this.primary in options.row) {
+                    this._operateData.id = options.row[this.primary];
+                }
+            }
+            if ('index' in options) {
+                this._operateData.index = options.index;
+            }
+            this._operateData.operate = operate;
+            this._operateData.data = this.tableData;
+            this.$_loadPage(operate);
+        },
+
+        //独立操作页 头部 返回按钮
+        $_goBack(){
+            this.$_backToList(0);
+        },
+
+        // 返回列表
+        $_backToList(r, fromDialog){
+            if (this.$route.fullPath !== this._pagePath) {
+                this._loadStyle = r;
+                this.$router.replace(this._pagePath);
+                return;
+            } 
+            let reload = false;
+            if (this.status === 2 && this.pageCmpt) {
+                this.status = 3;
+                this.pageCmpt = null;
+                reload = true;
+            } else if(fromDialog) {
+                reload = true;
+            }
+            if (reload) {
+                if (r > 1) {
+                    this.toPage(this.currentPage);
+                } else if (r > 0) {
+                    this.toPage(1);
+                }
+            }
         },
 
         // 载入页面 (组件被创建/路由发生变化时会被调用)
@@ -578,14 +770,16 @@ export default {
                 this._loadStyle = 2;
                 this._lastError = null;
             }
+
             // 有错误, 说明已载入过
             if (this._lastError) {
                 this.$admin.error(this._lastError.code, this._lastError.message);
                 return;
             }
+
             // 根据 path 判断当前浏览列表页
-            const {path, query, meta} = this.$route;
-            if (path === meta.uri) {
+            const {path, query} = this.$route;
+            if (path === this._pagePath) {
                 this.status = 3;
                 if (!this._reloadTime || this._loadStyle === 2) {
                     // 从未载入 或 强制刷新
@@ -597,6 +791,7 @@ export default {
                 this._loadStyle = 0;
                 return;
             }
+
             // 当前浏览操作页
             let operate = null;
             if (this._operateData.operate) {
@@ -605,7 +800,7 @@ export default {
             } else {
                 // 未载入列表, 访问 url 直接是操作页 (仅支持 顶部/单条数据, 底部不支持)
                 const type = path.split('/').pop();
-                this.revise.some(item => {
+                this.reviseProps.some(item => {
                     if (item.link === type){
                         this._operateData.kind = 0;
                         operate = item;
@@ -615,8 +810,8 @@ export default {
                 if (!operate && 'id' in query && query.id) {
                     this.rowRevise.some(item => {
                         if (item.link === type){
-                            this._operateData.id = query.id;
                             this._operateData.kind = 1;
+                            this._operateData.id = query.id;
                             operate = item;
                             return true;
                         }
@@ -624,13 +819,23 @@ export default {
                 }
                 this._operateData.operate = operate;
             }
+            // 页面形式的必须 type<3
             if (!operate || operate.type > 2) {
+                this.$_endOprateIng(operate);
                 this.$admin.error(404);
                 return;
             }
-            // 若为手机界面, 强制不使用弹窗形式, 是弹窗形式, 但列表都没载入过, 直接跳回列表
-            const dialog = this.$admin.getStore('phone') ? 0 : operate.type;
+            this.$_loadPage(operate);
+        },
+
+
+        // 加载弹窗或独立页
+        $_loadPage(operate){
+            // 若为手机界面, 强制不使用弹窗形式, 
+            const dialog = this.$admin.getStore('phone') ? 0 : ('type' in operate ? operate.type : 0);
+            //是弹窗形式, 但列表都没载入过, 直接跳回列表
             if (dialog > 0 && !this._reloadTime) {
+                this.$_endOprateIng(operate);
                 this.$router.replace(this._pagePath);
                 return;
             }
@@ -648,11 +853,15 @@ export default {
             }
             return this.$_toOperate(operate, dialog, finalComponent);
         },
-
-        // 打开 操作项, 会注入 data:{}, methods:{over(reload), back()}
+        
+        // 打开 操作项, 会注入 data:{bag:this._operateData}, methods:{over(reload), back()}
         $_toOperate(operate, dialog, finalComponent) {
             this._operateData.dialog = dialog;
             this._afterDialogClose_loadStyle = 0;
+
+            // 打开操作前, 将全局变量置为 this,  否则对于已经 Mixined 过重用一次的组件, bag总是返回首次使用时的变量
+            // bag对应_operateData指针, 但_operateData中的 object 类型却总是保持了首次使用的值
+            _currentCurd = this;
 
             // 判断是否已注入
             const mixinName = '__Operate__';
@@ -685,8 +894,7 @@ export default {
                         this._afterDialogClose_loadStyle = afterReload;
                         this.$admin.emit('closeDialog');
                     } else {
-                        this._loadStyle = afterReload;
-                        this.$router.replace(this._pagePath);
+                        this.$_backToList(afterReload)
                     }
                 };
                 const over = (r) => {
@@ -699,7 +907,8 @@ export default {
                     name: mixinName,
                     data: () => {
                         return {
-                            'bag': this._operateData
+                            // 这里返回 全局变量 _currentCurd 的 _operateData
+                            'bag': _currentCurd._operateData
                         }
                     },
                     methods:{
@@ -709,21 +918,42 @@ export default {
                 });
                 component.mixins = mixins;
             }
+            const pageName = 'name' in operate ? operate.name : '提示';
             // 展示独立页
             if (dialog > 0) {
                 const pop = {component};
                 if (dialog< 2) {
-                    pop.title = operate.name;
+                    pop.title = pageName;
                 }
                 pop.onClose = () => {
-                    this._loadStyle = this._afterDialogClose_loadStyle;
-                    this.$router.replace(this._pagePath);
+                    this.$_backToList(this._afterDialogClose_loadStyle, true)
                 };
                 this.$admin.emit('dialog', pop)
             } else {
-                this.status = 2;
-                this.pageName = operate.name;
+                this.pageName = pageName;
+                const header = 'header' in operate ? operate.header : null;
+                if (header && header in this.$scopedSlots) {
+                    this.pageHeader = header;
+                    this.pageHeaderData = 'headerData' in operate ? operate.headerData : undefined;
+                }
                 this.pageCmpt = component;
+                this.status = 2;
+            }
+            this.$_endOprateIng(operate);
+        },
+
+        // 取消操作按钮的 loading 状态
+        $_endOprateIng(operate){
+            if (this._operateData.kind === 1) {
+                if (this._lastRowOperateIndex !== null && this._operateData.row && '$s' in this._operateData.row) {
+                    this._operateData.row.$s[this._lastRowOperateIndex] = false;
+                    this.updateRow(this._operateData.row);
+                }
+            } else {
+                operate = operate||{};
+                if ('ing' in operate && operate.ing) {
+                    operate.ing = false;
+                }
             }
         },
 
@@ -773,7 +1003,7 @@ export default {
             }
         },
 
-        // 以 post 形式发送 查询列表数据
+        // 以 post 形式发送 查询列表数据 (暴露函数)
         // payload: {keyword:关键字, advance:{} 高级搜索条件, sort:{key:bool} 字段:是否为升序, last:最后主键值, offset:查询条数, page:页数}
         toPage(page){
             const t = Date.now();
@@ -824,13 +1054,16 @@ export default {
             })
         },
 
-        // 解析每条数据, 确认操作按钮状态
+        // 解析每条数据, 确认操作按钮状态 (暴露函数)
         resolveData(lists){
+            if (this.beforeResolve) {
+                lists = this.beforeResolve(lists);
+            }
             const data = this.$_resolveDataDisableBtn(lists);
-            if (!this.dataResolver) {
+            if (!this.afterResolve) {
                 return data;
             }
-            return this.dataResolver(data);
+            return this.afterResolve(data);
         },
 
         // 给 list data 加上按钮是否禁用的字段值
@@ -846,7 +1079,11 @@ export default {
                     : null
                 );
             });
-            const resolver = (item, index) => {
+            const tree = 'tree-props' in this.tableProps && (!('lazy' in this.tableProps) || !this.tableProps.lazy)
+                        ? this.tableProps['tree-props'] : null;
+            const childrenField = tree && 'children' in tree ? tree.children : null;
+
+            const resolver = (item) => {
                 const rs = [];
                 filters.forEach(filter => {
                     rs.push(filter ? this.$_compared(
@@ -857,6 +1094,9 @@ export default {
                 });
                 item['$s'] = rs;
                 item['$s_'] = 0;
+                if (childrenField && childrenField in item && Array.isArray(item[childrenField])) {
+                    item[childrenField] = item[childrenField].map(resolver)
+                }
                 return item;
             };
             this._dataResolver = resolver;
@@ -909,6 +1149,25 @@ export default {
 
 
 <style>
+/*加一个全局, 弹窗形式 from 用的 style*/
+.curd-loadForm{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 260px;
+    min-height:200px;
+    color:#999;
+}
+.curd-autoForm{
+    padding:20px;
+    max-width: 600px;
+}
+.curd-dialogForm{
+    min-width: 400px;
+    padding:20px 0 0 0;
+}
+
+/*配合排序功能的样式*/
 .el-table .ascending .sort-caret.ascending{
     border-bottom-color: #C0C4CC;
 }
@@ -922,7 +1181,6 @@ export default {
     border-top-color: #409EFF;
 }
 
-
 /*CURD 外框*/
 .curd-wrp{
     width: 100%;
@@ -930,6 +1188,10 @@ export default {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+}
+.app-phone .curd-wrp{
+    display: block;
+    height: auto;
 }
 .curd-center{
     align-items: center;
@@ -1063,6 +1325,7 @@ export default {
     padding:4px 0;
 }
 .curd-list .el-table .cell{
+    padding-right:0;
     white-space: nowrap;
 }
 .curd-list .el-table .el-table__header-wrapper{
@@ -1137,6 +1400,7 @@ export default {
 }
 .app-phone .curd-operate{
     position: relative;
+    z-index: 2;
 }
 .app-phone .curd-operate .el-checkbox{
     display: none;
@@ -1184,6 +1448,12 @@ export default {
     box-sizing: border-box;
     padding:10px 20px;
     border-bottom:1px solid #f9f9f9;
+}
+.curd-page .el-page-header__left{
+    align-items: center;
+}
+.curd-page .el-page-header__content{
+    flex:1;
 }
 .curd-page-component{
     flex:1;

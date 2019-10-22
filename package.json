@@ -4,6 +4,7 @@
   "description": "convert vue sfc to js",
   "main": "dist/foo.umd.js",
   "scripts": {
+    "server": "node ./scripts/server.js",
     "make": "rollup -c ./scripts/rollup.config.js",
     "make:1": "cross-env BUILD_STEP=1 npm run make",
     "make:2": "cross-env BUILD_STEP=2 npm run make",

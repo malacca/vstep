@@ -1,3 +1,6 @@
+/**
+ * 本地 sqlite 数据库
+ */
 let _database;
 const database = () => {
     if (!_database) {
@@ -75,6 +78,12 @@ const replace = (table, row, update) => {
     return execute(sql, values);
 };
 
+
+
+
+/**
+ * 账户数据表
+ */
 
 const formatAccount = (row) => {
     var d = new Date(row.join_time);
@@ -218,29 +227,6 @@ export default {
             data: null
         })
     }, 1500],
-    '/menus': [
-        {
-            name: '管理',
-            title: '控制面板',
-            icon: 'news',
-            menus: [
-                {
-                    name: '控制面板',
-                    icon: 'files',
-                    link: '/',
-                    path: 'dashboard',
-                    greedy: false
-                },
-                {
-                    name: '会员管理',
-                    icon: 'user',
-                    link: '/account',
-                    path: 'account',
-                    greedy: true
-                }
-            ]
-        },
-    ],
     '/account': (req, res) => {
         return req.json().then(json => {
             return listAccount(json)
@@ -292,4 +278,28 @@ export default {
             return res.send(rs)
         })
     },
+
+    '/menus': [
+        {
+            name: '管理',
+            title: '控制面板',
+            icon: 'news',
+            menus: [
+                {
+                    name: '控制面板',
+                    icon: 'files',
+                    link: '/',
+                    path: 'dashboard',
+                    greedy: false
+                },
+                {
+                    name: '会员管理',
+                    icon: 'user',
+                    link: '/account',
+                    path: 'account',
+                    greedy: true
+                }
+            ]
+        },
+    ],
 };

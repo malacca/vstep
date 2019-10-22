@@ -16,7 +16,7 @@ import Configure from './../app/config';
 // 源文件目录 / 生成目录 / 是否压缩代码 (rollup 编译结果有一定的可读性, 可以不压缩 review 一下编译结果)
 const srcPath = 'src';
 const distPath = 'dist';
-const compressCode = false;
+const compressCode = 1;
 const rollupConfig = [];
 
 

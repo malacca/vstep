@@ -21,13 +21,13 @@ export default {
 
     // requireJs paths 配置, 如果路径在 localLib 目录下, 可使用 ~lib~ 代指
     requirePaths: {
-        'ELEMENT': ['https://cdn.jsdelivr.net/npm/element-ui@2.9.1/lib/index', '~lib~/element']
+        'ELEMENT': ['https://cdn.jsdelivr.net/npm/element-ui@2.12.0/lib/index', '~lib~/element']
     },
 
     // 可用组件库, 可使用 require(lib!name) 加载, 先 css 后 js
     requireLibs: {
         'element': {
-            css: ['https://cdn.jsdelivr.net/npm/element-ui@2.9.1/lib/theme-chalk/index', '~lib~/element'],
+            css: ['https://cdn.jsdelivr.net/npm/element-ui@2.12.0/lib/theme-chalk/index', '~lib~/element'],
             js: 'ELEMENT'
         },
         'lvFoo': "~lib~/foo",
@@ -48,7 +48,7 @@ export default {
     cookieMode: 'cors',
 
     // 调试模式下 是否禁用 mock 数据
-    disableMock: false,
+    disableMock: true,
 
     // 是否需要登陆检测
     auth: true,
