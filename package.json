@@ -1,5 +1,5 @@
 {
-  "name": "vue-4step",
+  "name": "vue-3step",
   "version": "1.0.0",
   "description": "convert vue sfc to js",
   "main": "dist/foo.umd.js",

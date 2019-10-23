@@ -6,33 +6,16 @@
             <div class="app-nav-top" v-if="menus.length > 1"><ul>
                 <li v-for="(menu, index) in menus" :key="'k_' + index" @click="toggle(index)" :class="index === activeTop ? 'active' : ''">
                     <el-icon :name="menu.icon"/>
-                    <p>{{menu.name}}</p>
+                    <p v-if="menu.name">{{menu.name}}</p>
                 </li>
             </ul></div>
             <div class="app-nav-sub">
                 <div class="app-nav-group" v-for="(menu, index) in menus" :key="'k_' + index" v-show="index === activeTop">
                     <h3 class="name">
-                        <el-icon :name="menu.icon"/>
+                        <el-icon :name="menu.icon||'menu'"/>
                         <span>{{menu.title}}</span>
                     </h3>
-                    <el-menu router :default-active="activeMenu" ref="menu">
-                        <template v-for="(submenu, subindex) in menu.menus">
-                            <el-submenu :key="'k_' + subindex" :index="'sub_' + subindex" v-if="'menus' in submenu">
-                                <template slot="title">
-                                    <el-icon :name="submenu.icon"/>
-                                    <span>{{submenu.name}}</span>
-                                </template>
-                                <el-menu-item v-for="(sonmenu, sonindex) in submenu.menus" :key="'k_' + sonindex" :index="sonmenu.link">
-                                    <el-icon :name="sonmenu.icon"/>
-                                    <span slot="title">{{sonmenu.name}}</span>
-                                </el-menu-item>
-                            </el-submenu>
-                            <el-menu-item :key="'k_' + subindex" :index="submenu.link" v-else>
-                                <el-icon :name="submenu.icon"/>
-                                <span slot="title">{{submenu.name}}</span>
-                            </el-menu-item>
-                        </template>
-                    </el-menu>
+                    <el-menu-auto router :belong="index" :menu="menu" :default-active="activeMenu" ref="menu"/>
                 </div>
             </div>
         </el-aside>
@@ -68,10 +51,195 @@
 
 
 <script>
+/* 菜单格式 推荐最多三级嵌套
+menus = [
+    {
+        // 主分类名称(左侧简短显示) / 主分类标题(右侧较长显示) / icon 图标
+        name:'',
+        title:'',
+        icon:'',
+
+        // 主分类菜单
+        menus:[
+            // 分割文字
+            {
+                name:'内容管理',
+                [icon: ''],
+            },
+
+            // 链接
+            {
+                name: '新增内容',
+                link: '/account',
+                path: 'account',
+                [icon: ''],
+                [greedy: true]
+            },
+
+            // 可折叠链接组
+            {
+                name:'',
+                [icon:''],
+                [open:false],
+                menus:[
+                    {...分割文字...},
+                    {...链接...},
+                ]
+            }
+        ]
+    },
+
+    ...可以有多个主分类...
+]
+*/
+// 解析菜单数据
+const parseMenu = (menus) => {
+    const parsed = [];
+    menus.forEach(items => {
+        if (!('menus' in items) || !Array.isArray(items.menus)) {
+            return;
+        }
+        const groups = parseSubMenu(items.menus);
+        if (!groups.length) {
+            return;
+        }
+        parsed.push({
+            name: items.name||null,
+            icon: items.icon||'menu',
+            title: items.title||items.name||'控制面板',
+            groups
+        });
+    });
+    return parsed;
+};
+const parseSubMenu = (menus) => {
+    const parsed = [];
+    let groupName = null;
+    let groupIcon = null;
+    let groupItems = [];
+    menus.forEach(subMenu => {
+        // 三级菜单
+        if ('menus' in subMenu) {
+            const groups = parseSubMenu(subMenu.menus);
+            groupItems.push({
+                name: subMenu.name||'分组',
+                icon: subMenu.icon||null,
+                open: subMenu.open||null,
+                groups
+            });
+        }
+        // 二级链接菜单
+        else if ('link' in subMenu) {
+            groupItems.push(subMenu);
+        }
+        // 二级分割菜单
+        else {
+            if (groupItems.length) {
+                parsed.push({
+                    name: groupName,
+                    icon: groupIcon,
+                    items: groupItems
+                })
+            }
+            groupName = subMenu.name||null;
+            groupIcon = subMenu.icon||null;
+            groupItems = [];
+        }
+    });
+    if (groupItems.length) {
+        parsed.push({
+            name: groupName,
+            icon: groupIcon,
+            items: groupItems
+        })
+    }
+    return parsed;
+}
+
+// 函数式菜单组件
+let elMenuOpens = [];
+const elMenuAuto = {
+    functional: true,
+    render(h, ref) {
+        elMenuOpens = [];
+        const {data} = ref;
+        const {menu, belong, ...attrs} = data.attrs;
+        const childs = [];
+        menu.groups.forEach((group, index) => {
+            childs.push(renderGroup(h, group, [belong, index]))
+        })
+        attrs["default-openeds"] = elMenuOpens;
+        data.attrs = attrs;
+        return h('el-menu', data, childs)  
+    }
+};
+const renderGroup = (h, group, top) => {
+    const items = renderItem(h, group.items, top);
+    // group 无 name, 直接返回菜单 items
+    if (!group.name) {
+        return items;
+    }
+    // group 无 icon 通过 props[title] 直接返回
+    const groupComponent = 'el-menu-item-group';
+    if (!group.icon) {
+        return h(groupComponent, {
+            attrs:{
+                title: group.name
+            }
+        }, [items])
+    }
+    // group 有 icon 通过 slot 返回
+    return h(groupComponent, [h('template',{
+        slot:"title"
+    }, [
+        h('el-icon',{attrs:{name: group.icon}}),
+        group.name
+    ]), items])
+};
+const renderItem = (h, items, top) => {
+    return items.map((item, index) => {
+        const inner = [];
+        if (item.icon) {
+            inner.push(h('el-icon', {
+                attrs:{
+                    name: item.icon
+                }
+            }))
+        }
+        inner.push(item.name);
+        // 当前就是最终菜单, 直接返回
+        if (!('groups' in item)) {
+            return h('el-menu-item', {
+                attrs: {
+                    index: item.link
+                }
+            }, inner)
+        }
+        // 当前菜单还有子菜单
+        top.push(index);
+        const childs = [
+            h('template', {slot:"title"}, inner)
+        ];
+        item.groups.forEach((sub, subIndex) => {
+            childs.push(renderGroup(h, sub, top.concat([subIndex])))
+        })
+        const openIndex = 'sub_' + top.join('_');
+        if (item.open) {
+            elMenuOpens.push(openIndex)
+        }
+        return h('el-submenu', {
+            attrs: {
+                index: openIndex
+            }
+        }, childs);
+    })
+}
+
+// 主框架模板
 let open = false;
 let title = document.title;
-title = title === '' ? '' : ' - ' + title;
 let dialogOnClose = null;
+title = title === '' ? '' : ' - ' + title;
 export default {
     data: {
         topClass:'',
@@ -84,9 +252,12 @@ export default {
         maskStyle:'',
         dialog: null
     },
+    components: {
+        'el-menu-auto': elMenuAuto
+    },
     computed: {
         menus() {
-            return this.$admin.menus
+            return parseMenu(this.$admin.menus)
         },
         uname() {
             return this.$admin.passport.name

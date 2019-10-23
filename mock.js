@@ -82,9 +82,8 @@ const replace = (table, row, update) => {
 
 
 /**
- * 账户数据表
+ * 管理员账户
  */
-
 const formatAccount = (row) => {
     var d = new Date(row.join_time);
     row.join_time = (d.getMonth() + 1) + '-' + d.getDate() + ' ' +  d.getHours() + ':' + d.getMinutes();
@@ -218,7 +217,7 @@ export default {
                 })
               }
         })
-    }, 1500],
+    }, 500],
     '/logout': [(req, res) => {
         localStorage.removeItem(':user');
         return res.send({
@@ -226,7 +225,9 @@ export default {
             message:null,
             data: null
         })
-    }, 1500],
+    }, 500],
+
+
     '/account': (req, res) => {
         return req.json().then(json => {
             return listAccount(json)
@@ -279,11 +280,11 @@ export default {
         })
     },
 
+
     '/menus': [
         {
             name: '管理',
             title: '控制面板',
-            icon: 'news',
             menus: [
                 {
                     name: '控制面板',
@@ -298,7 +299,7 @@ export default {
                     link: '/account',
                     path: 'account',
                     greedy: true
-                }
+                },
             ]
         },
     ],
