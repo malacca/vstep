@@ -5,7 +5,7 @@
  */
 define([
     'vue',
-    'css!/src/theme/green',  // 载入自定义的主题css
+    'css!../src/theme/green',  // 载入自定义的主题css
     'css!//at.alicdn.com/t/font_940751_sshz3v9h6fj',  // 载入 iconfont 图标库
     'css!//at.alicdn.com/t/font_1668973_3pzet4s6hjs'
 ], function(Vue) {

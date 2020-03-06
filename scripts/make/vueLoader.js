@@ -324,7 +324,7 @@ function myFetch(request) {
         if (mockGlobal) {
             return resolve(mockData);
         }
-        return getImportResult('/mock.js').catch(() => {
+        return getImportResult('../mock.js').catch(() => {
             return {};
         }).then(mock => {
             mockGlobal = true;
