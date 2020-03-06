@@ -1,0 +1,5 @@
+{
+    "curd":"./curd/index.js",
+    "curd-utils":"./curdUtils.js",
+    "curd-maker":"./curd-maker/index.js"   
+}

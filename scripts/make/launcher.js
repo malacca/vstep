@@ -2,6 +2,7 @@
 /**
  * launcher.js
  * 打包 config / index.vue / error.vue / login.vue 的加载库
+ * 用于 appMake2 和 appMake3
  */
 import CommonLibs from "@libs";
 import AlertHandler from '@app/alert.js';
@@ -12,26 +13,38 @@ import LoginComponent from "@app/login.vue";
 import IndexComponent from "@app/index.vue";
 import resolveRouter from '@app/resolveRouter.js';
 import {
-    setApiBaseUrl, ajax, registerLib, setFetchGuard, 
-    setErrorComponent, setAlertHandler, setConfirmHandler, setFormatRouter, initApp
+    useVuex,
+    extendUrl,
+    setCookieMode, 
+    resolveVueLib,
+    registerLib,
+    setErrorComponent,
+    setFetchGuard, 
+    setFormatRouter,
+    setAlertHandler,
+    setConfirmHandler,
+    fetchPlus, 
+    initApp
 } from './utils';
 const cookieMode = process.env.app_cookieMode;
 
-
+// 初始化: 是否需要认证 -> 认证通过 -> initApp
+//                     -> 认证失败 -> 显示LoginComponent
 function init(Vue, VueRouter) {
-    const options = cookieMode !== '' && cookieMode !== 'none' ? {
-        credentials: 'include',
-        mode: cookieMode
-    } : {};
+    const options = {guard:false, handleError:false};
+    const api = {
+        passport: process.env.app_passport,
+        menus: process.env.app_menus
+    };
     if (process.env.app_auth) {
-        return ajax(process.env.app_passport, options).then(user => {
+        return fetchPlus(api.passport, options).then(user => {
             const login = user.status !== 200;
             return user.json().then(j => {
                 return {
                     login,
                     passport: j
                 }
-            }).catch(err => {
+            }).catch(() => {
                 if (!login) {
                      throw 'load auth api failed';
                 }
@@ -45,9 +58,9 @@ function init(Vue, VueRouter) {
             throw err;
         }).then(user => {
             if (user.login) {
-                return {view:LoginComponent, menus:[], passport:user.passport}
+                return {view:LoginComponent, menus:[], passport:user.passport, login:true}
             }
-            return ajax(process.env.app_menus, options).then(res => {
+            return fetchPlus(api.menus, options).then(res => {
                 if (res.status !== 200) {
                     alert(process.env.app_menusFailed);
                     throw 'load menus failed';
@@ -57,10 +70,11 @@ function init(Vue, VueRouter) {
                 return {view:IndexComponent, menus, passport:user.passport}
             })
         }).then(app => {
-            return initApp(Vue, VueRouter, app, process.env.app_routerMode)
+            app.api = api;
+            return initApp(Vue, VueRouter, app)
         })
     } else {
-        return ajax(process.env.app_menus, options).then(res => {
+        return fetchPlus(api.menus, options).then(res => {
             if (res.status !== 200) {
                 const err = 'load menus failed';
                 alert(err);
@@ -68,46 +82,41 @@ function init(Vue, VueRouter) {
             }
             return res.json();
         }).then(menus => {
-            return initApp(Vue, VueRouter, {view:IndexComponent, menus, passport:user.passport}, process.env.app_routerMode)
+            return initApp(Vue, VueRouter, {view:IndexComponent, menus, passport:null, api})
         })
     }
 }
 
+// 向 utils 注入 app 目录下的基础配置 -> 并根据配置预加载elmUI -> 初始化
 function launcher() {
-    setApiBaseUrl(process.env.app_apiBase, cookieMode);
+    setCookieMode(cookieMode);
     setFetchGuard(fetchGuard);
     setFormatRouter(resolveRouter);
     setAlertHandler(AlertHandler);
     setConfirmHandler(ConfirmHandler);
     setErrorComponent(ErrorComponent);
-    if (process.env.app_useVuex) {
-        require(['vue', 'vue.router', 'vuex'], function(Vue, VueRouter, Vuex) {
-            Vue.use(VueRouter);
-            Vue.use(Vuex);
-            CommonLibs(Vue);
-            registerLib(Vue, process.env.app_localLib, process.env.app_libs);
-            if (process.env.app_usePeerLib) {
-                require(process.env.app_peerLib, function(m) {
-                    init(Vue, VueRouter);
-                })
-            } else {
-                init(Vue, VueRouter);
-            }
-        })
-    } else {
-        require(['vue', 'vue.router'], function(Vue, VueRouter) {
-            Vue.use(VueRouter);
-            CommonLibs(Vue);
-            registerLib(Vue, process.env.app_localLib, process.env.app_libs);
-            if (process.env.app_usePeerLib) {
-                require(process.env.app_peerLib, function(m) {
-                    init(Vue, VueRouter);
-                })
-            } else {
-                init(Vue, VueRouter);
-            }
-        })
+    const depend = ['vue', 'vue-router'];
+    if (useVuex) {
+        depend.push('vuex');
     }
+    require(depend, function(Vue, VueRouter, Vuex) {
+        Vue.use(VueRouter);
+        if (useVuex) {
+            Vue.use(Vuex);
+        }
+        registerLib(Vue, CommonLibs);
+        require(process.env.app_peer, function(elm) {
+            resolveVueLib(Vue, elm);
+            // 全部加载完毕后, 再加载 extendUrl
+            if (extendUrl){
+                require([extendUrl], () => {
+                    init(Vue, VueRouter);
+                })
+            } else {
+                init(Vue, VueRouter);
+            }
+        })
+    })
 }
 
 export default launcher;

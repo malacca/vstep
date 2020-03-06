@@ -1,6 +1,6 @@
 /**
- * appMake3.js
- * 生产环境使用, 路由页面必须是编译过 runtime vue component
+ * 入口文件: appMake3.js
+ * 生产环境使用, 生成 js 必须加载 经过编译的vue组件(runtime vue component)
  */
 import launcher from './launcher';
 import {baseUrl, setRouterResolver} from './utils';
@@ -12,6 +12,7 @@ function loader(page) {
         })
     })
 }
+
 function app() {
     setRouterResolver(loader);
     requirejs.config({

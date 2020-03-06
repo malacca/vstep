@@ -1,4 +1,3 @@
-
 <template>
     <div class="loginForm">
         <h1>管理中心</h1>
@@ -16,7 +15,6 @@
     </div>
 </template>
 
-
 <script>
 export default {
     data() {
@@ -30,6 +28,13 @@ export default {
                 pwd:{ required:true, message: '请输入登录密码' },
             }
         };
+    },
+    created() {
+        const media = window.matchMedia("(max-width: 600px)");
+        this.$admin.setStore('phone', media.matches)
+        media.addListener((e) => {
+            this.$admin.setStore('phone', e.matches)
+        });
     },
     methods: {
         login(e) {
@@ -48,12 +53,9 @@ export default {
 </script>
 
 <style>
-html{
-   height: 100%;
-   overflow: hidden; 
-}
+html{width:100%;height:100%;}
 body{
-    height: 100%;
+    width:100%;height:100%;margin:0;
     background: #f8f8f8;
     text-align: center;
 }

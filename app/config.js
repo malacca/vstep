@@ -1,49 +1,21 @@
+const cndHost = 'https://cdn.jsdelivr.net/';
 export default {
-    // 路由模式 hash | history
-    routerMode: 'hash',
+    // cnd 路径 (包括 vue, vueRouter, vuex, element, element_css, lessCdn)
+    // 在 baseurl 下创建一份 (即与 data-main 设置的 app.js 同级目录) js 资源, 保存名为对应 key 值
+    // 优先加载 cdn url, 失败则加载 baseurl 下的文件
+    vue: cndHost + 'npm/vue@2.6.11/dist/vue.min',
+    vue_runtime: cndHost + 'npm/vue@2.6.11/dist/vue.runtime.min',
+    vue_router: cndHost + 'npm/vue-router@3.1.5/dist/vue-router.min',
+    vuex: cndHost + 'npm/vuex@3.1.2/dist/vuex.min',
+    element: cndHost + 'npm/element-ui@2.13.0/lib/index',
+    element_css: cndHost + 'npm/element-ui@2.13.0/lib/theme-chalk/index',
 
-    // 是否使用 vue cdn (包括 vue,vueRouter,vuex) 不使用则需要在 baseurl 下自行创建一份
-    useCdn: true,
+    // less cdn 路径, 直接 load .vue sfc 时需要这个, 可以实时转换 less style 该配置在 product 模式下无效
+    less: cndHost + 'npm/less@3.10.3/dist/less.min',
 
-    // 是否使用 Vuex
-    useVuex: false,
-
-    // vue cnd 路径
-    vue: "https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.min",
-    vue_runtime: "https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.runtime.min",
-    vue_router: "https://cdn.jsdelivr.net/npm/vue-router@3.1.3/dist/vue-router.min",
-    vuex: "https://cdn.jsdelivr.net/npm/vuex@3.1.1/dist/vuex.min",
-
-    // 存放 lib 文件的目录, 该目录下存放 vue 框架文件 (vue,vue-router,vuex) 和 其他公用库
-    // 该目录相当于 baseurl 而言,  如果在 script 中明确指定了 base-url 那么访问路径为  base-url/lib
-    // 未指明的情况下, 认为 baseurl 为 app.js 的路径目录, 即 lib 目录应该与 app.js 在同一层级
-    localLib: 'lib',
-
-    // requireJs paths 配置, 如果路径在 localLib 目录下, 可使用 ~lib~ 代指
-    requirePaths: {
-        'ELEMENT': ['https://cdn.jsdelivr.net/npm/element-ui@2.12.0/lib/index', '~lib~/element']
+    // requireJs paths 预置, 也可使用 extend-url 额外再配置
+    paths: {
     },
-
-    // 可用组件库, 可使用 require(lib!name) 加载, 先 css 后 js
-    requireLibs: {
-        'element': {
-            css: ['https://cdn.jsdelivr.net/npm/element-ui@2.12.0/lib/theme-chalk/index', '~lib~/element'],
-            js: 'ELEMENT'
-        },
-    },
-
-    // 初始就加载的组件库, 需是 requireLibs 中定义过的
-    peerLib: ['element'],
-
-    // less cdn 路径, 直接 load .vue sfc 时需要这个, 可以实时转换 less style
-    // 该配置在 product 模式下无效
-    lessCdn: 'https://cdn.jsdelivr.net/npm/less@3.10.3/dist/less.min',
-
-    // 使用 $admin.fetch / fetchJson / getJson / postJson 时的 api 前缀
-    apiBase: '',
-
-    // 是否禁用 mock 数据 (该配置在 product 模式下无效)
-    disableMock: false,
 
     // 请求后端 api 是否携带 cookie, (空|none: 不携带, same-origin|no-cors|cors|navigate 携带方式)
     // 关于携带方式, 可参考: https://developer.mozilla.org/zh-CN/docs/Web/API/Request/mode
@@ -63,4 +35,7 @@ export default {
 
     // 获取菜单失败的提示词
     menusFailed: '连接服务器失败，请稍后再试',
+
+    // 是否禁用 mock 数据 (在 product 模式下本来就是禁用的, 该配置无效)
+    disableMock: false,
 }

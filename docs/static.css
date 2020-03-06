@@ -1,0 +1,177 @@
+body{
+    margin:0;
+    text-align: center;
+}
+.wrap{
+    max-width: 1200px;
+    text-align: left;
+    margin:0 auto;
+}
+
+/*头部*/
+header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 76px;
+    border-bottom: 1px solid #DCDFE6;
+}
+header span{
+    display: flex;
+    align-items: center;
+}
+header h1{
+    color:#409EFF;
+    line-height: 1;
+    font-size: 1.35em;
+}
+header h2{
+    font-size: 0.725em;
+    color: #666;
+    margin: 5px 0 0 10px;
+    font-weight: normal;
+}
+header a{
+    color: #1989FA;
+    text-decoration: none;
+    margin-left: 20px;
+}
+
+/*主体*/
+main{
+    width: 100%;
+    display: flex;
+}
+
+/*左侧*/
+nav{
+    width:160px;
+    margin-right:20px;
+    padding-top:1.25em;
+}
+nav ul{
+    list-style: none;
+    padding:0;
+    margin:0;
+}
+nav li{
+    color:#444;
+    padding:10px 0;
+    cursor: pointer;
+    font-size: 0.875em;
+}
+nav li.active,
+nav li:hover{
+    color: #409EFF;
+}
+
+/*右侧*/
+section{
+    flex:1;
+    font-size: 0.94em;
+    padding-bottom:40px;
+    overflow: hidden;
+    font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;
+    line-height: 1.8;
+    word-wrap: break-word;
+}
+.info{
+    background: #f8f8f8;
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 0.725em;
+    margin-top: 26px;
+}
+.markd a {
+	color: #0366d6;
+}
+.markd h1,
+.markd h2,
+.markd h3,
+.markd h4,
+.markd h5,
+.markd h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+.markd h1,
+.markd h2{
+    padding-bottom: .3em;
+}
+.markd h1{
+    font-size: 2em;
+    border-bottom: 1px solid #eaecef;
+}
+.markdown-body h2 {
+    font-size: 1.5em;
+}
+.markd code {
+    font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
+    padding: .2em .4em;
+    font-size: 90%;
+    background-color: rgba(27,31,35,.05);
+    border-radius: 3px;
+    color: #c0392b;
+}
+.markd code[class*=language-]{
+    padding: 0;
+    font-size: 1em;
+    border-radius: 0;
+}
+.markd table>thead>tr>th {
+	border-color: #ddd;
+}
+.markd h1,
+.markd hr,
+.markd table>tbody>tr+tr>td {
+	border-color: #eee;
+}
+.markd blockquote {
+	padding: 0 1em;
+	color: #777;
+	border-left: 0.25em solid #ddd;
+	background: transparent;
+}
+
+@media (max-width:1210px) {
+    header {
+        padding:0 10px;
+    }
+    nav li{
+        padding-left:20px;
+    }
+    section{
+        padding-right:20px;
+    }
+}
+@media (max-width: 600px) {
+    header h2{
+        display: none;
+    }
+    header a{
+        font-size: 0.875em;
+    }
+    nav{
+        width: 100%;
+        background: #f8f8f8;
+        overflow-y: hidden;
+        overflow-x: auto;
+        padding: 5px 0;
+        margin:0;
+    }
+    nav ul{
+        display: flex;
+    }
+    nav li{
+        flex: 0 0 auto;
+        padding: 10px 20px;
+    }
+    main{
+        flex-direction: column;
+    }
+    section{
+        padding:0 20px 40px 20px;
+    }
+}
